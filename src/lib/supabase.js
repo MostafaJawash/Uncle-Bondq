@@ -50,7 +50,10 @@ export const syncUserProfile = async (userId, fullName, phone) => {
     // Try upsert - insert if new, update if exists
     const { data, error } = await supabase
       .from('profiles')
-      .upsert([profileData])
+      .upsert([profileData], { 
+        onConflict: 'phone',
+        ignoreDuplicates: false 
+      })
       .select()
       .single()
 
