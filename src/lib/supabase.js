@@ -55,17 +55,17 @@ export const syncUserProfile = async (userId, fullName, phone) => {
         ignoreDuplicates: false 
       })
       .select()
-      .single()
-
+    
     if (error) {
       console.error('Supabase error:', error)
       return { success: false, error: error.message || 'Database error' }
     }
-
-    console.log('Profile synced successfully:', data)
-    return { success: true, data }
-  } catch (err) {
-    console.error('Profile sync exception:', err)
-    return { success: false, error: err.message || 'Unknown error' }
-  }
-}
+    
+    const result = data?.[0]
+    console.log('Profile synced successfully:', result)
+    return { success: true, data: result }
+    } catch (err) {
+      console.error('Profile sync exception:', err)
+      return { success: false, error: err.message || 'Unknown error' }
+    }
+    }
