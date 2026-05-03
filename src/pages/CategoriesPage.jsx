@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import PageIntro from '../components/PageIntro'
 
-function CategoriesPage({ categories, isLoading, cardImage, onSelect, t }) {
+const fallbackImage = '/default.png'
+
+function CategoriesPage({ categories, isLoading, onSelect, t }) {
   const [search, setSearch] = useState('')
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.name.toLowerCase().includes(search.trim().toLowerCase())),
@@ -27,7 +29,13 @@ function CategoriesPage({ categories, isLoading, cardImage, onSelect, t }) {
         <div className="choice-grid">
           {visibleCategories.map((category) => (
             <button className="choice-card" type="button" key={category.id} onClick={() => onSelect(category)}>
-              <img src={cardImage} alt="" />
+              <img
+                src={category.image_url || fallbackImage}
+                alt={category.name}
+                onError={(event) => {
+                  event.currentTarget.src = fallbackImage
+                }}
+              />
               <strong>{category.name}</strong>
             </button>
           ))}

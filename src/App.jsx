@@ -229,9 +229,9 @@ function App() {
 
       try {
         const [categoriesResult, typesResult, sectionsResult, productsResult] = await Promise.all([
-          supabase.from('categories').select('id, name').order('name'),
-          supabase.from('product_types').select('id, name').order('name'),
-          supabase.from('sections').select('id, name, type_id').order('name'),
+          supabase.from('categories').select('id, name, image_url').order('name'),
+          supabase.from('product_types').select('id, name, image_url').order('name'),
+          supabase.from('sections').select('id, name, type_id, image_url').order('name'),
           supabase.from('products').select(productColumns),
         ])
 
@@ -496,14 +496,11 @@ function App() {
   ]
 
   const renderPage = () => {
-    const cardImage = `${basePath}/favicon.png`
-
     if (route.pathname === '/') {
       return (
         <CategoriesPage
           categories={categories}
           isLoading={isLoading}
-          cardImage={cardImage}
           t={t}
           onSelect={(category) => {
             sessionStorage.setItem('uncle-bondq-category-id', category.id)
@@ -518,7 +515,6 @@ function App() {
         <ProductTypesPage
           productTypes={relatedTypes}
           isLoading={isLoading}
-          cardImage={cardImage}
           t={t}
           onSelect={(type) => {
             sessionStorage.setItem('uncle-bondq-category-id', categoryId)
@@ -534,7 +530,6 @@ function App() {
         <SectionsPage
           sections={relatedSections}
           isLoading={isLoading}
-          cardImage={cardImage}
           t={t}
           onSelect={(section) => {
             sessionStorage.setItem('uncle-bondq-section-id', section.id)

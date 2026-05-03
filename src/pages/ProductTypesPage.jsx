@@ -1,6 +1,8 @@
 import PageIntro from '../components/PageIntro'
 
-function ProductTypesPage({ productTypes, isLoading, cardImage, onSelect, t }) {
+const fallbackImage = '/default.png'
+
+function ProductTypesPage({ productTypes, isLoading, onSelect, t }) {
   return (
     <>
       <PageIntro eyebrow={t('steps.types')} title={t('types.title')} copy={t('types.copy')} />
@@ -15,7 +17,13 @@ function ProductTypesPage({ productTypes, isLoading, cardImage, onSelect, t }) {
         <div className="choice-grid two-column">
           {productTypes.map((type) => (
             <button className="choice-card compact-choice" type="button" key={type.id} onClick={() => onSelect(type)}>
-              <img src={cardImage} alt="" />
+              <img
+                src={type.image_url || fallbackImage}
+                alt={type.name}
+                onError={(event) => {
+                  event.currentTarget.src = fallbackImage
+                }}
+              />
               <strong>{type.name}</strong>
             </button>
           ))}
