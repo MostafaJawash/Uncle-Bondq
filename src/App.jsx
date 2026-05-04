@@ -231,7 +231,18 @@ function App() {
         const [categoriesResult, typesResult, sectionsResult, productsResult] = await Promise.all([
           supabase.from('categories').select('id, name, image_url').order('name'),
           supabase.from('product_types').select('id, name, category_id, image_url').order('name'),
-          supabase.from('sections').select('id, name, category_id, type_id, image_url').order('name'),
+          supabase
+            .from('sections')
+            .select(`
+              id,
+              name,
+              image_url,
+              category_id,
+              type_id,
+              categories ( id, name ),
+              product_types ( id, name )
+            `)
+            .order('name'),
           supabase.from('products').select(productColumns),
         ])
 

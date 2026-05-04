@@ -124,44 +124,40 @@ begin
 end;
 $$ language plpgsql immutable;
 
--- Drop existing function if exists
-drop function if exists create_order(uuid, text, text, text, text, text, jsonb);
+-- Drop old RPC signature if it exists
+drop function if exists public.create_order(uuid, text, text, text, text, text, jsonb);
 
 -- Create RPC function to create order with coupon support
-create or replace function create_order(
-  p_customer_id uuid,
-  p_customer_name text,
-  p_phone text,
-  p_address text,
-  p_notes text,
-  p_coupon_code text,
-  p_items jsonb
+create or replace function public.create_order(
+  p_customer_name  text,
+  p_phone          text,
+  p_address        text,
+  p_notes          text,
+  p_customer_id    uuid,
+  p_coupon_code    text,
+  p_items          jsonb
 )
-returns jsonb as $$
+returns jsonb
+language plpgsql
+security definer
+as $$
 declare
   v_coupon_id       uuid := null;
-  v_discount_pct    integer := 0;
+  v_discount_pct    int := 0;
   v_order_id        uuid;
   v_total           numeric := 0;
   v_discount_amount numeric := 0;
   v_final_total     numeric := 0;
   v_item            jsonb;
 begin
-  -- 1. التحقق من أن الطلب يحتوي على عناصر
-  if p_items is null or jsonb_array_length(p_items) = 0 then
-    raise exception 'Order must contain at least one item';
-  end if;
-
-  -- 1. حساب الإجمالي الأصلي (قبل أي خصم)
-  select coalesce(sum((item->>'unit_price')::numeric * (item->>'quantity')::integer), 0)
+  select sum((item->>'unit_price')::numeric * (item->>'quantity')::int)
   into v_total
   from jsonb_array_elements(p_items) as item;
 
-  -- 2. معالجة الكوبون
   if p_coupon_code is not null and p_coupon_code <> '' then
     select id, discount_percentage into v_coupon_id, v_discount_pct
     from coupons
-    where code = upper(trim(p_coupon_code))
+    where code = p_coupon_code
       and is_active = true
       and (expiry_date is null or expiry_date > now());
 
@@ -170,30 +166,26 @@ begin
     end if;
   end if;
 
-  -- 3. حساب السعر النهائي بعد الخصم
   v_final_total := v_total - v_discount_amount;
 
-  -- 4. إدخال البيانات في جدول orders
   insert into orders (
-    customer_id, customer_name, phone, address, notes,
+    customer_name, phone, address, notes,
     user_id, coupon_id,
-    total_amount,
-    final_amount,
-    discount_amount,
+    total_amount, final_amount, discount_amount,
     status
   )
   values (
-    p_customer_id, p_customer_name, p_phone, p_address, p_notes,
-    p_customer_id, v_coupon_id,
-    v_total,
-    v_final_total,
-    v_discount_amount,
+    p_customer_name, p_phone, p_address, p_notes,
+    p_customer_id,
+    v_coupon_id,
+    v_total::text,
+    v_final_total::text,
+    v_discount_amount::text,
     'pending'
   )
   returning id into v_order_id;
 
-  -- 5. إدخال عناصر الطلب
-  for v_item in select jsonb_array_elements(p_items) loop
+  for v_item in select * from jsonb_array_elements(p_items) loop
     insert into order_items (
       order_id, product_id, product_name,
       quantity, unit_price, total_price
@@ -202,19 +194,19 @@ begin
       v_order_id,
       (v_item->>'product_id')::uuid,
       v_item->>'product_name',
-      (v_item->>'quantity')::integer,
-      (v_item->>'unit_price')::numeric,
-      ((v_item->>'unit_price')::numeric * (v_item->>'quantity')::integer)
+      (v_item->>'quantity')::int,
+      (v_item->>'unit_price')::text,
+      ((v_item->>'unit_price')::numeric * (v_item->>'quantity')::int)::text
     );
   end loop;
 
-  -- 6. إرجاع النتيجة
   return jsonb_build_object(
-    'order_id', v_order_id,
+    'order_id',       v_order_id,
     'original_total', v_total,
-    'discount', v_discount_amount,
-    'final_total', v_final_total
+    'discount',       v_discount_amount,
+    'final_total',    v_final_total
   );
-
 end;
-$$ language plpgsql;
+$$;
+
+notify pgrst, 'reload schema';
