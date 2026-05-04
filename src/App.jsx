@@ -445,16 +445,18 @@ function App() {
     setError('')
 
     try {
-      const customerId = ensureUserId()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       const rpcItems = cart.map((item) => ({
         product_id: item.id,
         product_name: item.name,
         quantity: item.quantity,
-        unit_price: getPriceAmount(item.price),
+        unit_price: item.price,
       }))
 
       console.log('Submitting order:', {
-        customerId,
+        customerId: user?.id ?? '',
         customerName: profile.full_name || checkout.full_name,
         phone: checkout.phone,
         itemCount: rpcItems.length,
@@ -462,12 +464,12 @@ function App() {
       })
 
       const { data: orderData, error: createOrderError } = await supabase.rpc('create_order', {
-        p_customer_id: customerId,
         p_customer_name: profile.full_name || checkout.full_name,
         p_phone: checkout.phone,
         p_address: checkout.address,
         p_notes: checkout.notes,
-        p_coupon_code: couponCode || '',
+        p_customer_id: user?.id ?? '',
+        p_coupon_code: couponCode ?? '',
         p_items: rpcItems,
       })
 

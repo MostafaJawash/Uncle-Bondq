@@ -124,8 +124,10 @@ begin
 end;
 $$ language plpgsql immutable;
 
--- Drop old RPC signature if it exists
+-- Drop old RPC signatures if they exist
 drop function if exists public.create_order(uuid, text, text, text, text, text, jsonb);
+drop function if exists public.create_order(text, text, text, text, uuid, text, jsonb);
+drop function if exists public.create_order(text, text, text, text, text, text, jsonb);
 
 -- Create RPC function to create order with coupon support
 create or replace function public.create_order(
@@ -133,7 +135,7 @@ create or replace function public.create_order(
   p_phone          text,
   p_address        text,
   p_notes          text,
-  p_customer_id    uuid,
+  p_customer_id    text,
   p_coupon_code    text,
   p_items          jsonb
 )
@@ -179,7 +181,7 @@ begin
     p_phone::text,
     p_address::text,
     p_notes::text,
-    p_customer_id::uuid,
+    nullif(p_customer_id, '')::uuid,
     v_coupon_id::uuid,
     v_total::text,
     v_final_total::text,
