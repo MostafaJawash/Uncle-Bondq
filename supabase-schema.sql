@@ -175,13 +175,16 @@ begin
     status
   )
   values (
-    p_customer_name, p_phone, p_address, p_notes,
-    p_customer_id,
-    v_coupon_id,
+    p_customer_name::text,
+    p_phone::text,
+    p_address::text,
+    p_notes::text,
+    p_customer_id::uuid,
+    v_coupon_id::uuid,
     v_total::text,
     v_final_total::text,
     v_discount_amount::text,
-    'pending'
+    'pending'::text
   )
   returning id into v_order_id;
 
