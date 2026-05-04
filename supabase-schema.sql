@@ -113,7 +113,9 @@ begin
 end;
 $$ language plpgsql immutable;
 
--- Create RPC function to create order
+-- Drop existing function if exists and recreate
+drop function if exists create_order(text, text, text, text, text, text, jsonb);
+
 create or replace function create_order(
   p_customer_id text,
   p_customer_name text,

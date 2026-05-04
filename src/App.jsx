@@ -28,18 +28,18 @@ const COUPON_STORAGE_KEY = 'uncle-bondq-coupon'
 const initialCheckout = { full_name: '', phone: '', address: '', notes: '' }
 
 const demoCategories = [
-  { id: 'demo-cat-1', name: 'شوكولا' },
-  { id: 'demo-cat-2', name: 'ضيافة' },
+  { id: 'demo-cat-1', name: 'شوكولا', image_url: null },
+  { id: 'demo-cat-2', name: 'ضيافة', image_url: null },
 ]
 
 const demoTypes = [
-  { id: 'demo-type-1', name: 'علب شوكولا', category_id: 'demo-cat-1' },
-  { id: 'demo-type-2', name: 'هدايا وضيافة', category_id: 'demo-cat-2' },
+  { id: 'demo-type-1', name: 'علب شوكولا', category_id: 'demo-cat-1', image_url: null },
+  { id: 'demo-type-2', name: 'هدايا وضيافة', category_id: 'demo-cat-2', image_url: null },
 ]
 
 const demoSections = [
-  { id: 'demo-section-1', name: 'فاخر', type_id: 'demo-type-1', category_id: 'demo-cat-1' },
-  { id: 'demo-section-2', name: 'كلاسيك', type_id: 'demo-type-2', category_id: 'demo-cat-2' },
+  { id: 'demo-section-1', name: 'فاخر', type_id: 'demo-type-1', category_id: 'demo-cat-1', image_url: null },
+  { id: 'demo-section-2', name: 'كلاسيك', type_id: 'demo-type-2', category_id: 'demo-cat-2', image_url: null },
 ]
 
 const demoProducts = [
@@ -273,9 +273,15 @@ function App() {
   }, [categoryId, productTypes])
 
   const relatedSections = useMemo(() => {
+    if (!sections || sections.length === 0) return []
+    
     let filtered = sections
-    if (categoryId) filtered = filtered.filter((section) => section.category_id === categoryId)
-    if (typeId) filtered = filtered.filter((section) => section.type_id === typeId)
+    if (categoryId) {
+      filtered = filtered.filter((section) => section.category_id === categoryId)
+    }
+    if (typeId) {
+      filtered = filtered.filter((section) => section.type_id === typeId)
+    }
     return filtered
   }, [categoryId, typeId, sections])
 
