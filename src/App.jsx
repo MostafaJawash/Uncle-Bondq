@@ -67,7 +67,7 @@ const demoProducts = [
 
 const productColumns = 'id, name, price, description, weight, images, category_id, type_id, section_id'
 const orderColumns =
-  'id, customer_id, customer_name, phone, address, notes, status, total_amount, discount_amount, final_amount, created_at, order_items(id, order_id, product_id, product_name, quantity, unit_price, total_price)'
+  'id, user_id, customer_name, phone, address, notes, status, total_amount, discount_amount, final_amount, created_at, order_items(id, order_id, product_id, product_name, quantity, unit_price, total_price)'
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
 
