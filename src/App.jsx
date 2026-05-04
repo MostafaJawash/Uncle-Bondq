@@ -33,13 +33,13 @@ const demoCategories = [
 ]
 
 const demoTypes = [
-  { id: 'demo-type-1', name: 'علب شوكولا' },
-  { id: 'demo-type-2', name: 'هدايا وضيافة' },
+  { id: 'demo-type-1', name: 'علب شوكولا', category_id: 'demo-cat-1' },
+  { id: 'demo-type-2', name: 'هدايا وضيافة', category_id: 'demo-cat-2' },
 ]
 
 const demoSections = [
-  { id: 'demo-section-1', name: 'فاخر', type_id: 'demo-type-1' },
-  { id: 'demo-section-2', name: 'كلاسيك', type_id: 'demo-type-2' },
+  { id: 'demo-section-1', name: 'فاخر', type_id: 'demo-type-1', category_id: 'demo-cat-1' },
+  { id: 'demo-section-2', name: 'كلاسيك', type_id: 'demo-type-2', category_id: 'demo-cat-2' },
 ]
 
 const demoProducts = [
@@ -230,8 +230,8 @@ function App() {
       try {
         const [categoriesResult, typesResult, sectionsResult, productsResult] = await Promise.all([
           supabase.from('categories').select('id, name, image_url').order('name'),
-          supabase.from('product_types').select('id, name, image_url').order('name'),
-          supabase.from('sections').select('id, name, type_id, image_url').order('name'),
+          supabase.from('product_types').select('id, name, category_id, image_url').order('name'),
+          supabase.from('sections').select('id, name, category_id, type_id, image_url').order('name'),
           supabase.from('products').select(productColumns),
         ])
 
@@ -268,15 +268,13 @@ function App() {
   const orderId = route.search.get('id') || sessionStorage.getItem('uncle-bondq-order-id') || ''
 
   const relatedTypes = useMemo(() => {
-    if (!categoryId) return productTypes
-    const ids = new Set(products.filter((product) => product.category_id === categoryId).map((product) => product.type_id))
-    const filtered = productTypes.filter((type) => ids.has(type.id))
-    return filtered.length ? filtered : productTypes
-  }, [categoryId, productTypes, products])
+    if (!categoryId) return []
+    return productTypes.filter((type) => type.category_id === categoryId)
+  }, [categoryId, productTypes])
 
   const relatedSections = useMemo(
-    () => sections.filter((section) => !typeId || section.type_id === typeId),
-    [sections, typeId],
+    () => (categoryId ? sections.filter((section) => section.category_id === categoryId) : []),
+    [categoryId, sections],
   )
 
   const filteredProducts = useMemo(() => {

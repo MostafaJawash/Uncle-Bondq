@@ -939,7 +939,7 @@ img {
 }
 
 .choice-grid.two-column {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .choice-grid.two-column .compact-choice {
@@ -952,7 +952,7 @@ img {
   }
 
   .choice-grid.two-column {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .product-grid {

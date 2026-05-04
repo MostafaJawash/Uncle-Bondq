@@ -5,12 +5,14 @@ create table if not exists categories (
 
 create table if not exists product_types (
   id uuid primary key default gen_random_uuid(),
-  name text not null
+  name text not null,
+  category_id uuid references categories(id) on delete cascade
 );
 
 create table if not exists sections (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  category_id uuid references categories(id) on delete cascade,
   type_id uuid not null references product_types(id) on delete cascade
 );
 
