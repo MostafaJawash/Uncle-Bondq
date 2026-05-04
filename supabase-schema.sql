@@ -28,6 +28,15 @@ create table if not exists products (
   section_id uuid references sections(id) on delete set null
 );
 
+create table if not exists coupons (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  discount_percentage integer not null,
+  is_active boolean default true,
+  expiry_date timestamptz,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists orders (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid not null,
@@ -35,6 +44,8 @@ create table if not exists orders (
   phone text not null,
   address text not null,
   notes text,
+  user_id uuid,
+  coupon_id uuid references coupons(id) on delete set null,
   status text not null default 'pending',
   total_amount numeric not null default 0,
   discount_amount numeric not null default 0,
@@ -116,7 +127,7 @@ $$ language plpgsql immutable;
 -- Drop existing function if exists
 drop function if exists create_order(uuid, text, text, text, text, text, jsonb);
 
--- Create RPC function to create order with proper UUID type for customer_id
+-- Create RPC function to create order with coupon support
 create or replace function create_order(
   p_customer_id uuid,
   p_customer_name text,
@@ -126,56 +137,84 @@ create or replace function create_order(
   p_coupon_code text,
   p_items jsonb
 )
-returns table(order_id uuid, final_total numeric, created_at timestamptz) as $$
+returns jsonb as $$
 declare
-  v_order_id uuid;
-  v_total_amount numeric := 0;
-  v_discount_amount numeric;
-  v_final_amount numeric;
-  v_item jsonb;
-  v_product_id uuid;
+  v_coupon_id       uuid := null;
+  v_discount_pct    integer := 0;
+  v_order_id        uuid;
+  v_total           numeric := 0;
+  v_discount_amount numeric := 0;
+  v_final_total     numeric := 0;
+  v_item            jsonb;
 begin
-  -- Validate inputs
+  -- 1. التحقق من أن الطلب يحتوي على عناصر
   if p_items is null or jsonb_array_length(p_items) = 0 then
     raise exception 'Order must contain at least one item';
   end if;
 
-  -- Calculate total from items
-  select coalesce(sum((item->>'quantity')::integer * (item->>'unit_price')::numeric), 0)
-  into v_total_amount
+  -- 1. حساب الإجمالي الأصلي (قبل أي خصم)
+  select coalesce(sum((item->>'unit_price')::numeric * (item->>'quantity')::integer), 0)
+  into v_total
   from jsonb_array_elements(p_items) as item;
 
-  -- Calculate discount using coupon code
-  v_discount_amount := get_coupon_discount(p_coupon_code, v_total_amount);
-  v_final_amount := v_total_amount - v_discount_amount;
+  -- 2. معالجة الكوبون
+  if p_coupon_code is not null and p_coupon_code <> '' then
+    select id, discount_percentage into v_coupon_id, v_discount_pct
+    from coupons
+    where code = upper(trim(p_coupon_code))
+      and is_active = true
+      and (expiry_date is null or expiry_date > now());
 
-  -- Insert order with customer_id
-  insert into orders (customer_id, customer_name, phone, address, notes, total_amount, discount_amount, final_amount)
-  values (p_customer_id, p_customer_name, p_phone, p_address, p_notes, v_total_amount, v_discount_amount, v_final_amount)
-  returning orders.id into v_order_id;
+    if v_coupon_id is not null then
+      v_discount_amount := (v_total * v_discount_pct) / 100;
+    end if;
+  end if;
 
-  -- Insert order items
-  for v_item in select jsonb_array_elements(p_items)
-  loop
-    -- Try to convert product_id to UUID if it's a valid UUID, otherwise set to NULL
-    begin
-      v_product_id := (v_item->>'product_id')::uuid;
-    exception when others then
-      v_product_id := null;
-    end;
+  -- 3. حساب السعر النهائي بعد الخصم
+  v_final_total := v_total - v_discount_amount;
 
-    insert into order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
+  -- 4. إدخال البيانات في جدول orders
+  insert into orders (
+    customer_id, customer_name, phone, address, notes,
+    user_id, coupon_id,
+    total_amount,
+    final_amount,
+    discount_amount,
+    status
+  )
+  values (
+    p_customer_id, p_customer_name, p_phone, p_address, p_notes,
+    p_customer_id, v_coupon_id,
+    v_total,
+    v_final_total,
+    v_discount_amount,
+    'pending'
+  )
+  returning id into v_order_id;
+
+  -- 5. إدخال عناصر الطلب
+  for v_item in select jsonb_array_elements(p_items) loop
+    insert into order_items (
+      order_id, product_id, product_name,
+      quantity, unit_price, total_price
+    )
     values (
       v_order_id,
-      v_product_id,
+      (v_item->>'product_id')::uuid,
       v_item->>'product_name',
       (v_item->>'quantity')::integer,
       (v_item->>'unit_price')::numeric,
-      ((v_item->>'quantity')::integer * (v_item->>'unit_price')::numeric)
+      ((v_item->>'unit_price')::numeric * (v_item->>'quantity')::integer)
     );
   end loop;
 
-  -- Return order details
-  return query select v_order_id, v_final_amount, now();
+  -- 6. إرجاع النتيجة
+  return jsonb_build_object(
+    'order_id', v_order_id,
+    'original_total', v_total,
+    'discount', v_discount_amount,
+    'final_total', v_final_total
+  );
+
 end;
 $$ language plpgsql;

@@ -273,21 +273,70 @@ function App() {
   const sectionId = route.search.get('section_id') || sessionStorage.getItem('uncle-bondq-section-id') || ''
   const orderId = route.search.get('id') || sessionStorage.getItem('uncle-bondq-order-id') || ''
 
+  // Debug: Log navigation values when they change
+  useEffect(() => {
+    console.log('Route changed:', {
+      pathname: route.pathname,
+      categoryId,
+      typeId,
+      sectionId,
+      sessionStorageCategory: sessionStorage.getItem('uncle-bondq-category-id'),
+      sessionStorageType: sessionStorage.getItem('uncle-bondq-type-id'),
+      sessionStorageSection: sessionStorage.getItem('uncle-bondq-section-id'),
+    })
+  }, [route.pathname, categoryId, typeId, sectionId])
+
   const relatedTypes = useMemo(() => {
     if (!categoryId) return []
     return productTypes.filter((type) => type.category_id === categoryId)
   }, [categoryId, productTypes])
 
   const relatedSections = useMemo(() => {
-    if (!sections || sections.length === 0) return []
+    if (!sections || sections.length === 0) {
+      console.log('No sections available')
+      return []
+    }
     
+    console.log('Filtering sections:', {
+      totalSections: sections.length,
+      categoryId,
+      typeId,
+    })
+
     let filtered = sections
     if (categoryId) {
-      filtered = filtered.filter((section) => section.category_id === categoryId)
+      console.log('Filtering by category:', categoryId)
+      filtered = filtered.filter((section) => {
+        const match = section.category_id === categoryId
+        if (!match) {
+          console.log('Section filtered out:', { 
+            sectionId: section.id, 
+            sectionCategoryId: section.category_id, 
+            expectedCategoryId: categoryId 
+          })
+        }
+        return match
+      })
+      console.log('After category filter:', filtered.length)
     }
+    
     if (typeId) {
-      filtered = filtered.filter((section) => section.type_id === typeId)
+      console.log('Filtering by type:', typeId)
+      filtered = filtered.filter((section) => {
+        const match = section.type_id === typeId
+        if (!match) {
+          console.log('Section filtered out by type:', { 
+            sectionId: section.id, 
+            sectionTypeId: section.type_id, 
+            expectedTypeId: typeId 
+          })
+        }
+        return match
+      })
+      console.log('After type filter:', filtered.length)
     }
+
+    console.log('Final filtered sections:', filtered.length, filtered)
     return filtered
   }, [categoryId, typeId, sections])
 
@@ -418,10 +467,10 @@ function App() {
 
       console.log('Order created successfully:', orderData)
 
-      const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData
+      const createdOrder = orderData
       const createdOrderId = createdOrder?.order_id
       const finalTotal = Number(createdOrder?.final_total ?? discountedTotal)
-      const createdAt = createdOrder?.created_at || new Date().toISOString()
+      const createdAt = new Date().toISOString()
 
       setSuccessOrder({
         id: createdOrderId || '',
@@ -528,7 +577,10 @@ function App() {
           isLoading={isLoading}
           t={t}
           onSelect={(category) => {
+            console.log('Selected category:', category)
             sessionStorage.setItem('uncle-bondq-category-id', category.id)
+            sessionStorage.removeItem('uncle-bondq-type-id')
+            sessionStorage.removeItem('uncle-bondq-section-id')
             navigate('/types')
           }}
         />
@@ -542,8 +594,15 @@ function App() {
           isLoading={isLoading}
           t={t}
           onSelect={(type) => {
+            console.log('Selected type:', type)
+            console.log('Current categoryId:', categoryId)
             sessionStorage.setItem('uncle-bondq-category-id', categoryId)
             sessionStorage.setItem('uncle-bondq-type-id', type.id)
+            sessionStorage.removeItem('uncle-bondq-section-id')
+            console.log('About to navigate to /sections with:', {
+              categoryId,
+              typeId: type.id,
+            })
             navigate('/sections')
           }}
         />
@@ -551,12 +610,18 @@ function App() {
     }
 
     if (route.pathname === '/sections') {
+      console.log('Sections page - current state:', {
+        categoryId,
+        typeId,
+        relatedSectionsCount: relatedSections.length,
+      })
       return (
         <SectionsPage
           sections={relatedSections}
           isLoading={isLoading}
           t={t}
           onSelect={(section) => {
+            console.log('Selected section:', section)
             sessionStorage.setItem('uncle-bondq-section-id', section.id)
             sessionStorage.setItem('uncle-bondq-products-filtered', '1')
             navigate('/products')
