@@ -240,11 +240,17 @@ function App() {
         if (sectionsResult.error) throw sectionsResult.error
         if (productsResult.error) throw productsResult.error
 
+        console.log('Sections loaded:', sectionsResult.data?.length || 0)
+        if (sectionsResult.data?.length === 0) {
+          console.warn('Warning: No sections found in database')
+        }
+
         setCategories(categoriesResult.data || [])
         setProductTypes(typesResult.data || [])
         setSections(sectionsResult.data || [])
         setProducts(productsResult.data || [])
       } catch (requestError) {
+        console.error('Storefront load error:', requestError)
         setError(requestError.message || t('app.loadError'))
       } finally {
         setIsLoading(false)
@@ -387,6 +393,14 @@ function App() {
         unit_price: getPriceAmount(item.price),
       }))
 
+      console.log('Submitting order:', {
+        customerId,
+        customerName: profile.full_name || checkout.full_name,
+        phone: checkout.phone,
+        itemCount: rpcItems.length,
+        total: discountedTotal,
+      })
+
       const { data: orderData, error: createOrderError } = await supabase.rpc('create_order', {
         p_customer_id: customerId,
         p_customer_name: profile.full_name || checkout.full_name,
@@ -397,7 +411,12 @@ function App() {
         p_items: rpcItems,
       })
 
-      if (createOrderError) throw createOrderError
+      if (createOrderError) {
+        console.error('Order creation error:', createOrderError)
+        throw createOrderError
+      }
+
+      console.log('Order created successfully:', orderData)
 
       const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData
       const createdOrderId = createdOrder?.order_id

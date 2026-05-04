@@ -30,7 +30,7 @@ create table if not exists products (
 
 create table if not exists orders (
   id uuid primary key default gen_random_uuid(),
-  customer_id text not null,
+  customer_id uuid not null,
   customer_name text,
   phone text not null,
   address text not null,
@@ -113,11 +113,12 @@ begin
 end;
 $$ language plpgsql immutable;
 
--- Drop existing function if exists and recreate
-drop function if exists create_order(text, text, text, text, text, text, jsonb);
+-- Drop existing function if exists
+drop function if exists create_order(uuid, text, text, text, text, text, jsonb);
 
+-- Create RPC function to create order with proper UUID type for customer_id
 create or replace function create_order(
-  p_customer_id text,
+  p_customer_id uuid,
   p_customer_name text,
   p_phone text,
   p_address text,
@@ -134,12 +135,17 @@ declare
   v_item jsonb;
   v_product_id uuid;
 begin
+  -- Validate inputs
+  if p_items is null or jsonb_array_length(p_items) = 0 then
+    raise exception 'Order must contain at least one item';
+  end if;
+
   -- Calculate total from items
   select coalesce(sum((item->>'quantity')::integer * (item->>'unit_price')::numeric), 0)
   into v_total_amount
   from jsonb_array_elements(p_items) as item;
 
-  -- Calculate discount
+  -- Calculate discount using coupon code
   v_discount_amount := get_coupon_discount(p_coupon_code, v_total_amount);
   v_final_amount := v_total_amount - v_discount_amount;
 
