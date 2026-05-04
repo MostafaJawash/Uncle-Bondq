@@ -67,7 +67,7 @@ const demoProducts = [
 
 const productColumns = 'id, name, price, description, weight, images, category_id, type_id, section_id'
 const orderColumns =
-  'id, customer_name, phone, address, notes, status, total_amount, final_amount, discount_amount, created_at, order_items(id, order_id, product_id, product_name, quantity, unit_price, total_price)'
+  'id, customer_id, customer_name, phone, address, notes, status, total_amount, discount_amount, final_amount, created_at, order_items(id, order_id, product_id, product_name, quantity, unit_price, total_price)'
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -272,10 +272,12 @@ function App() {
     return productTypes.filter((type) => type.category_id === categoryId)
   }, [categoryId, productTypes])
 
-  const relatedSections = useMemo(
-    () => (categoryId ? sections.filter((section) => section.category_id === categoryId) : []),
-    [categoryId, sections],
-  )
+  const relatedSections = useMemo(() => {
+    let filtered = sections
+    if (categoryId) filtered = filtered.filter((section) => section.category_id === categoryId)
+    if (typeId) filtered = filtered.filter((section) => section.type_id === typeId)
+    return filtered
+  }, [categoryId, typeId, sections])
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -371,7 +373,7 @@ function App() {
     setError('')
 
     try {
-      const user = { id: ensureUserId() }
+      const customerId = ensureUserId()
       const rpcItems = cart.map((item) => ({
         product_id: item.id,
         product_name: item.name,
@@ -380,11 +382,11 @@ function App() {
       }))
 
       const { data: orderData, error: createOrderError } = await supabase.rpc('create_order', {
-        p_customer_name: checkout.fullName || checkout.full_name || profile.full_name,
+        p_customer_id: customerId,
+        p_customer_name: profile.full_name || checkout.full_name,
         p_phone: checkout.phone,
         p_address: checkout.address,
         p_notes: checkout.notes,
-        p_user_id: user.id,
         p_coupon_code: couponCode || '',
         p_items: rpcItems,
       })
@@ -392,9 +394,9 @@ function App() {
       if (createOrderError) throw createOrderError
 
       const createdOrder = Array.isArray(orderData) ? orderData[0] : orderData
-      const createdOrderId = createdOrder?.order_id || createdOrder?.id || createdOrder
-      const createdAt = createdOrder?.created_at || new Date().toISOString()
+      const createdOrderId = createdOrder?.order_id
       const finalTotal = Number(createdOrder?.final_total ?? discountedTotal)
+      const createdAt = createdOrder?.created_at || new Date().toISOString()
 
       setSuccessOrder({
         id: createdOrderId || '',

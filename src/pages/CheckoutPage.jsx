@@ -24,18 +24,10 @@ function CheckoutPage({
       <section className="checkout-grid">
         <form className="checkout-form panel" onSubmit={onSubmit}>
           <label>
-            {t('profile.fullName')}
-            <input
-              required
-              value={checkout.full_name}
-              onChange={(event) => setCheckout((value) => ({ ...value, full_name: event.target.value }))}
-              placeholder={t('profile.fullNamePlaceholder')}
-            />
-          </label>
-          <label>
             {t('checkout.phone')}
             <input
               required
+              type="tel"
               value={checkout.phone}
               onChange={(event) => setCheckout((value) => ({ ...value, phone: event.target.value }))}
               placeholder={t('checkout.phonePlaceholder')}
