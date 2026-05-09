@@ -45,7 +45,7 @@ function ProductModal({ product, quantity, setQuantity, onClose, onAddToCart, t 
           ×
         </button>
         <div className="modal-media">
-          <img src={activeImage} alt={product.name} />
+          <img src={activeImage} alt={product.name} decoding="async" />
           {images.length > 1 && (
             <div className="thumb-row">
               {images.map((image) => (
@@ -55,7 +55,7 @@ function ProductModal({ product, quantity, setQuantity, onClose, onAddToCart, t 
                   key={image}
                   onClick={() => setActiveImage(image)}
                 >
-                  <img src={image} alt="" />
+                  <img src={image} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>

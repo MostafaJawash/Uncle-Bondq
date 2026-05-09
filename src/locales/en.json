@@ -66,8 +66,8 @@
     "after": "Total after discount"
   },
   "categories": {
-    "title": "Choose a category",
-    "copy": "Browse Uncle Bondq categories and choose what fits your order.",
+    "title": "Uncle Bondq | انكل بوندق",
+    "copy": "Browse Uncle Bondq - انكل بوندق chocolate, hospitality, and gift categories, then choose what fits your order.",
     "select": "Select",
     "fallback": "Carefully selected collection",
     "empty": "No categories found yet."

@@ -39,15 +39,12 @@ export const syncUserProfile = async (userId, fullName, phone) => {
       return { success: false, error: 'Name cannot be empty' }
     }
 
-    console.log('Syncing profile:', { userId, fullName: fullNameTrimmed, phone: phoneInt })
-
     const profileData = {
       id: userId,
       full_name: fullNameTrimmed,
       phone: phoneInt,
     }
 
-    // Try upsert - insert if new, update if exists
     const { data, error } = await supabase
       .from('profiles')
       .upsert([profileData], { 
@@ -57,15 +54,12 @@ export const syncUserProfile = async (userId, fullName, phone) => {
       .select()
     
     if (error) {
-      console.error('Supabase error:', error)
       return { success: false, error: error.message || 'Database error' }
     }
     
     const result = data?.[0]
-    console.log('Profile synced successfully:', result)
     return { success: true, data: result }
-    } catch (err) {
-      console.error('Profile sync exception:', err)
-      return { success: false, error: err.message || 'Unknown error' }
-    }
-    }
+  } catch (err) {
+    return { success: false, error: err.message || 'Unknown error' }
+  }
+}

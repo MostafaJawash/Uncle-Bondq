@@ -20,6 +20,8 @@ function ProductTypesPage({ productTypes, isLoading, onSelect, t }) {
               <img
                 src={type.image_url || fallbackImage}
                 alt={type.name}
+                loading="lazy"
+                decoding="async"
                 onError={(event) => {
                   event.currentTarget.src = fallbackImage
                 }}

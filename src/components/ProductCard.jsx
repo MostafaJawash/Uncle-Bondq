@@ -7,7 +7,7 @@ function ProductCard({ product, isFavorite = false, onOpen, onAddToCart, onToggl
     <article className="product-card">
       <button className="product-hit-area" type="button" onClick={() => onOpen(product)}>
         <div className="product-image-frame">
-          <img src={image} alt={product.name} loading="lazy" />
+          <img src={image} alt={product.name} loading="lazy" decoding="async" />
         </div>
         <div className="product-card-body">
           <div className="product-card-title-row">

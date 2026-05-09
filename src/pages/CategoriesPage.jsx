@@ -32,6 +32,8 @@ function CategoriesPage({ categories, isLoading, onSelect, t }) {
               <img
                 src={category.image_url || fallbackImage}
                 alt={category.name}
+                loading="lazy"
+                decoding="async"
                 onError={(event) => {
                   event.currentTarget.src = fallbackImage
                 }}

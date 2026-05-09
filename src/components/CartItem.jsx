@@ -3,7 +3,7 @@ import { money } from '../utils/store'
 function CartItem({ item, onDecrease, onIncrease, onRemove, t }) {
   return (
     <article className="cart-item">
-      {item.image ? <img src={item.image} alt="" /> : <div className="cart-image-empty" />}
+      {item.image ? <img src={item.image} alt="" loading="lazy" decoding="async" /> : <div className="cart-image-empty" />}
       <div className="cart-item-body">
         <div>
           <h3>{item.name}</h3>

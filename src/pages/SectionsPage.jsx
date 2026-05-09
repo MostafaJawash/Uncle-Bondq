@@ -46,6 +46,8 @@ function SectionsPage({ sections, isLoading, onSelect, t }) {
                 <img
                   src={section.image_url || fallbackImage}
                   alt={section.name}
+                  loading="lazy"
+                  decoding="async"
                   onError={(event) => {
                     event.currentTarget.src = fallbackImage
                   }}

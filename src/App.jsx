@@ -17,6 +17,7 @@ import FavoritesPage from './pages/FavoritesPage'
 import OrderDetailsPage from './pages/OrderDetailsPage'
 import { getInitialLanguage, LANGUAGE_STORAGE_KEY, translate } from './i18n'
 import { isSupabaseConfigured, supabase, syncUserProfile } from './lib/supabase'
+import { updateSeo } from './utils/seo'
 import { getPriceAmount, getProductImages } from './utils/store'
 
 const CART_STORAGE_KEY = 'uncle-bondq-cart'
@@ -183,6 +184,10 @@ function App() {
   }, [])
 
   useEffect(() => {
+    updateSeo(route.pathname)
+  }, [route.pathname])
+
+  useEffect(() => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
     document.documentElement.lang = language
     document.documentElement.dir = isArabic ? 'rtl' : 'ltr'
@@ -251,17 +256,11 @@ function App() {
         if (sectionsResult.error) throw sectionsResult.error
         if (productsResult.error) throw productsResult.error
 
-        console.log('Sections loaded:', sectionsResult.data?.length || 0)
-        if (sectionsResult.data?.length === 0) {
-          console.warn('Warning: No sections found in database')
-        }
-
         setCategories(categoriesResult.data || [])
         setProductTypes(typesResult.data || [])
         setSections(sectionsResult.data || [])
         setProducts(productsResult.data || [])
       } catch (requestError) {
-        console.error('Storefront load error:', requestError)
         setError(requestError.message || t('app.loadError'))
       } finally {
         setIsLoading(false)
@@ -284,70 +283,23 @@ function App() {
   const sectionId = route.search.get('section_id') || sessionStorage.getItem('uncle-bondq-section-id') || ''
   const orderId = route.search.get('id') || sessionStorage.getItem('uncle-bondq-order-id') || ''
 
-  // Debug: Log navigation values when they change
-  useEffect(() => {
-    console.log('Route changed:', {
-      pathname: route.pathname,
-      categoryId,
-      typeId,
-      sectionId,
-      sessionStorageCategory: sessionStorage.getItem('uncle-bondq-category-id'),
-      sessionStorageType: sessionStorage.getItem('uncle-bondq-type-id'),
-      sessionStorageSection: sessionStorage.getItem('uncle-bondq-section-id'),
-    })
-  }, [route.pathname, categoryId, typeId, sectionId])
-
   const relatedTypes = useMemo(() => {
     if (!categoryId) return []
     return productTypes.filter((type) => type.category_id === categoryId)
   }, [categoryId, productTypes])
 
   const relatedSections = useMemo(() => {
-    if (!sections || sections.length === 0) {
-      console.log('No sections available')
-      return []
-    }
-    
-    console.log('Filtering sections:', {
-      totalSections: sections.length,
-      categoryId,
-      typeId,
-    })
+    if (!sections || sections.length === 0) return []
 
     let filtered = sections
     if (categoryId) {
-      console.log('Filtering by category:', categoryId)
-      filtered = filtered.filter((section) => {
-        const match = section.category_id === categoryId
-        if (!match) {
-          console.log('Section filtered out:', { 
-            sectionId: section.id, 
-            sectionCategoryId: section.category_id, 
-            expectedCategoryId: categoryId 
-          })
-        }
-        return match
-      })
-      console.log('After category filter:', filtered.length)
+      filtered = filtered.filter((section) => section.category_id === categoryId)
     }
     
     if (typeId) {
-      console.log('Filtering by type:', typeId)
-      filtered = filtered.filter((section) => {
-        const match = section.type_id === typeId
-        if (!match) {
-          console.log('Section filtered out by type:', { 
-            sectionId: section.id, 
-            sectionTypeId: section.type_id, 
-            expectedTypeId: typeId 
-          })
-        }
-        return match
-      })
-      console.log('After type filter:', filtered.length)
+      filtered = filtered.filter((section) => section.type_id === typeId)
     }
 
-    console.log('Final filtered sections:', filtered.length, filtered)
     return filtered
   }, [categoryId, typeId, sections])
 
@@ -455,14 +407,6 @@ function App() {
         unit_price: item.price,
       }))
 
-      console.log('Submitting order:', {
-        customerId: user?.id ?? '',
-        customerName: profile.full_name || checkout.full_name,
-        phone: checkout.phone,
-        itemCount: rpcItems.length,
-        total: discountedTotal,
-      })
-
       const { data: orderData, error: createOrderError } = await supabase.rpc('create_order', {
         p_customer_name: profile.full_name || checkout.full_name,
         p_phone: checkout.phone,
@@ -474,11 +418,8 @@ function App() {
       })
 
       if (createOrderError) {
-        console.error('Order creation error:', createOrderError)
         throw createOrderError
       }
-
-      console.log('Order created successfully:', orderData)
 
       const createdOrder = orderData
       const createdOrderId = createdOrder?.order_id
@@ -537,7 +478,6 @@ function App() {
         // Clear error on success
         setError('')
       } catch (syncError) {
-        console.error('Profile sync error:', syncError)
         setError(syncError.message || t('app.profileError'))
         return
       }
@@ -590,7 +530,6 @@ function App() {
           isLoading={isLoading}
           t={t}
           onSelect={(category) => {
-            console.log('Selected category:', category)
             sessionStorage.setItem('uncle-bondq-category-id', category.id)
             sessionStorage.removeItem('uncle-bondq-type-id')
             sessionStorage.removeItem('uncle-bondq-section-id')
@@ -607,15 +546,9 @@ function App() {
           isLoading={isLoading}
           t={t}
           onSelect={(type) => {
-            console.log('Selected type:', type)
-            console.log('Current categoryId:', categoryId)
             sessionStorage.setItem('uncle-bondq-category-id', categoryId)
             sessionStorage.setItem('uncle-bondq-type-id', type.id)
             sessionStorage.removeItem('uncle-bondq-section-id')
-            console.log('About to navigate to /sections with:', {
-              categoryId,
-              typeId: type.id,
-            })
             navigate('/sections')
           }}
         />
@@ -623,18 +556,12 @@ function App() {
     }
 
     if (route.pathname === '/sections') {
-      console.log('Sections page - current state:', {
-        categoryId,
-        typeId,
-        relatedSectionsCount: relatedSections.length,
-      })
       return (
         <SectionsPage
           sections={relatedSections}
           isLoading={isLoading}
           t={t}
           onSelect={(section) => {
-            console.log('Selected section:', section)
             sessionStorage.setItem('uncle-bondq-section-id', section.id)
             sessionStorage.setItem('uncle-bondq-products-filtered', '1')
             navigate('/products')
@@ -766,7 +693,7 @@ function App() {
     <main className="app-layout" data-language={language}>
       <aside className="sidebar">
         <button className="brand-link" type="button" onClick={() => navigate('/')}>
-          <img src={`${basePath}/favicon.png`} alt="" />
+          <img src={`${basePath}/favicon.png`} alt={`${t('app.brand')} - انكل بوندق`} width="44" height="44" />
           <span>{t('app.brand')}</span>
         </button>
         <nav>
@@ -796,7 +723,7 @@ function App() {
           ☰
         </button>
         <button className="brand-link" type="button" onClick={() => navigate('/')}>
-          <img src={`${basePath}/favicon.png`} alt="" />
+          <img src={`${basePath}/favicon.png`} alt={`${t('app.brand')} - انكل بوندق`} width="38" height="38" />
           <span>{t('app.brand')}</span>
         </button>
       </header>
@@ -805,7 +732,7 @@ function App() {
         <div className="drawer-layer" onClick={() => setIsDrawerOpen(false)}>
           <aside className="mobile-drawer" onClick={(event) => event.stopPropagation()}>
             <button className="brand-link" type="button" onClick={() => navigate('/')}>
-              <img src={`${basePath}/favicon.png`} alt="" />
+              <img src={`${basePath}/favicon.png`} alt={`${t('app.brand')} - انكل بوندق`} width="38" height="38" />
               <span>{t('app.brand')}</span>
             </button>
             {navItems.map((item) => (

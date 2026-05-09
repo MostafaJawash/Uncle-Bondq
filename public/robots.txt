@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://uncle-bondq.vercel.app/sitemap.xml
