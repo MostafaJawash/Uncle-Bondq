@@ -164,17 +164,8 @@ function App() {
   const t = useCallback((key, values) => translate(language, key, values), [language])
 
   const navigate = useCallback((path, params = {}) => {
-    const isFiltered = sessionStorage.getItem('uncle-bondq-products-filtered')
-    if (path === '/products' && !isFiltered) {
-        sessionStorage.removeItem('uncle-bondq-category-id')
-        sessionStorage.removeItem('uncle-bondq-type-id')
-        sessionStorage.removeItem('uncle-bondq-section-id')
-    }
     const url = makeUrl(path, params)
     window.history.pushState({}, '', url)
-    if (isFiltered) {
-        sessionStorage.removeItem('uncle-bondq-products-filtered')
-    }
     setRoute(getRoute())
     setIsDrawerOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -595,10 +586,7 @@ function App() {
           t={t}
           onSelect={(category) => {
             console.log('Selected category:', category)
-            sessionStorage.setItem('uncle-bondq-category-id', category.id)
-            sessionStorage.removeItem('uncle-bondq-type-id')
-            sessionStorage.removeItem('uncle-bondq-section-id')
-            navigate('/types')
+            navigate('/types', { category_id: category.id })
           }}
         />
       )
@@ -613,14 +601,10 @@ function App() {
           onSelect={(type) => {
             console.log('Selected type:', type)
             console.log('Current categoryId:', categoryId)
-            sessionStorage.setItem('uncle-bondq-category-id', categoryId)
-            sessionStorage.setItem('uncle-bondq-type-id', type.id)
-            sessionStorage.removeItem('uncle-bondq-section-id')
-            console.log('About to navigate to /sections with:', {
-              categoryId,
-              typeId: type.id,
+            navigate('/sections', {
+              category_id: categoryId,
+              type_id: type.id,
             })
-            navigate('/sections')
           }}
         />
       )
@@ -639,9 +623,11 @@ function App() {
           t={t}
           onSelect={(section) => {
             console.log('Selected section:', section)
-            sessionStorage.setItem('uncle-bondq-section-id', section.id)
-            sessionStorage.setItem('uncle-bondq-products-filtered', '1')
-            navigate('/products')
+            navigate('/products', {
+              category_id: categoryId,
+              type_id: typeId,
+              section_id: section.id,
+            })
           }}
         />
       )
