@@ -282,9 +282,9 @@ function App() {
   const couponDiscount = useMemo(() => getCouponDiscount(couponCode, cartTotal), [cartTotal, couponCode])
   const discountedTotal = Math.max(0, cartTotal - couponDiscount)
 
-  const categoryId = route.search.get('category_id') || ''
-  const typeId = route.search.get('type_id') || ''
-  const sectionId = route.search.get('section_id') || ''
+  const categoryId = route.search.get('category_id') || sessionStorage.getItem('uncle-bondq-category-id') || ''
+  const typeId = route.search.get('type_id') || sessionStorage.getItem('uncle-bondq-type-id') || ''
+  const sectionId = route.search.get('section_id') || sessionStorage.getItem('uncle-bondq-section-id') || ''
   const orderId = route.search.get('id') || sessionStorage.getItem('uncle-bondq-order-id') || ''
 
   const relatedTypes = useMemo(() => {
