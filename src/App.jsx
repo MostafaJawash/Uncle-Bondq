@@ -164,18 +164,21 @@ function App() {
   const t = useCallback((key, values) => translate(language, key, values), [language])
 
   const navigate = useCallback((path, params = {}) => {
-    if (path === '/products' && !sessionStorage.getItem('uncle-bondq-products-filtered')) {
-      sessionStorage.removeItem('uncle-bondq-category-id')
-      sessionStorage.removeItem('uncle-bondq-type-id')
-      sessionStorage.removeItem('uncle-bondq-section-id')
+    const isFiltered = sessionStorage.getItem('uncle-bondq-products-filtered')
+    if (path === '/products' && !isFiltered) {
+        sessionStorage.removeItem('uncle-bondq-category-id')
+        sessionStorage.removeItem('uncle-bondq-type-id')
+        sessionStorage.removeItem('uncle-bondq-section-id')
     }
-    sessionStorage.removeItem('uncle-bondq-products-filtered')
     const url = makeUrl(path, params)
     window.history.pushState({}, '', url)
+    if (isFiltered) {
+        sessionStorage.removeItem('uncle-bondq-products-filtered')
+    }
     setRoute(getRoute())
     setIsDrawerOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [])
+   }, [])
 
   useEffect(() => {
     const handlePopState = () => setRoute(getRoute())
