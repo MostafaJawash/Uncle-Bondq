@@ -347,13 +347,36 @@ function App() {
   }, [categoryId, typeId, sections])
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    console.log('Filtering products:', {
+      totalProducts: products.length,
+      categoryId,
+      typeId,
+      sectionId,
+    })
+    
+    const result = products.filter((product) => {
       const categoryMatches = !categoryId || product.category_id === categoryId
       const typeMatches = !typeId || product.type_id === typeId
       const sectionMatches = !sectionId || product.section_id === sectionId
+      
+      if (!categoryMatches || !typeMatches || !sectionMatches) {
+        console.log('Product filtered out:', {
+          productId: product.id,
+          productName: product.name,
+          product_category_id: product.category_id,
+          product_type_id: product.type_id,
+          product_section_id: product.section_id,
+          categoryMatches,
+          typeMatches,
+          sectionMatches,
+        })
+      }
 
       return categoryMatches && typeMatches && sectionMatches
     })
+    
+    console.log('Filtered products result:', result.length, result.map(p => ({ id: p.id, name: p.name })))
+    return result
   }, [categoryId, products, sectionId, typeId])
 
   const productTitle = categoryId || typeId || sectionId ? t('products.filteredTitle') : t('products.allTitle')
