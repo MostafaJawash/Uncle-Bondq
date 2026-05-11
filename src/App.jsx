@@ -108,6 +108,13 @@ const ensureUserId = () => {
 
 const getFavoritesKey = (phone) => `${FAVORITES_STORAGE_KEY}-${phone || 'guest'}`
 
+const clearProductFilterStorage = () => {
+  sessionStorage.removeItem('uncle-bondq-category-id')
+  sessionStorage.removeItem('uncle-bondq-type-id')
+  sessionStorage.removeItem('uncle-bondq-section-id')
+  sessionStorage.removeItem('uncle-bondq-products-filtered')
+}
+
 const getStoredFavorites = (phone) => {
   try {
     return JSON.parse(localStorage.getItem(getFavoritesKey(phone)) || '[]')
@@ -164,12 +171,9 @@ function App() {
   const t = useCallback((key, values) => translate(language, key, values), [language])
 
   const navigate = useCallback((path, params = {}) => {
-    if (path === '/products' && !sessionStorage.getItem('uncle-bondq-products-filtered')) {
-      sessionStorage.removeItem('uncle-bondq-category-id')
-      sessionStorage.removeItem('uncle-bondq-type-id')
-      sessionStorage.removeItem('uncle-bondq-section-id')
+    if (path === '/products' && !params.category_id && !params.type_id && !params.section_id) {
+      clearProductFilterStorage()
     }
-    sessionStorage.removeItem('uncle-bondq-products-filtered')
     const url = makeUrl(path, params)
     window.history.pushState({}, '', url)
     setRoute(getRoute())
@@ -278,9 +282,9 @@ function App() {
   const couponDiscount = useMemo(() => getCouponDiscount(couponCode, cartTotal), [cartTotal, couponCode])
   const discountedTotal = Math.max(0, cartTotal - couponDiscount)
 
-  const categoryId = route.search.get('category_id') || sessionStorage.getItem('uncle-bondq-category-id') || ''
-  const typeId = route.search.get('type_id') || sessionStorage.getItem('uncle-bondq-type-id') || ''
-  const sectionId = route.search.get('section_id') || sessionStorage.getItem('uncle-bondq-section-id') || ''
+  const categoryId = route.search.get('category_id') || ''
+  const typeId = route.search.get('type_id') || ''
+  const sectionId = route.search.get('section_id') || ''
   const orderId = route.search.get('id') || sessionStorage.getItem('uncle-bondq-order-id') || ''
 
   const relatedTypes = useMemo(() => {
@@ -533,7 +537,7 @@ function App() {
             sessionStorage.setItem('uncle-bondq-category-id', category.id)
             sessionStorage.removeItem('uncle-bondq-type-id')
             sessionStorage.removeItem('uncle-bondq-section-id')
-            navigate('/types')
+            navigate('/types', { category_id: category.id })
           }}
         />
       )
@@ -549,7 +553,7 @@ function App() {
             sessionStorage.setItem('uncle-bondq-category-id', categoryId)
             sessionStorage.setItem('uncle-bondq-type-id', type.id)
             sessionStorage.removeItem('uncle-bondq-section-id')
-            navigate('/sections')
+            navigate('/sections', { category_id: categoryId, type_id: type.id })
           }}
         />
       )
@@ -563,8 +567,11 @@ function App() {
           t={t}
           onSelect={(section) => {
             sessionStorage.setItem('uncle-bondq-section-id', section.id)
-            sessionStorage.setItem('uncle-bondq-products-filtered', '1')
-            navigate('/products')
+            navigate('/products', {
+              category_id: categoryId,
+              type_id: typeId,
+              section_id: section.id,
+            })
           }}
         />
       )
