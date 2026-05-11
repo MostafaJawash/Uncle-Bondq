@@ -354,25 +354,30 @@ function App() {
       sectionId,
     })
     
+    // إذا اخترنا قسم محدد، عرض فقط منتجات هذا القسم
+    if (sectionId) {
+      const result = products.filter(product => product.section_id === sectionId)
+      console.log('Filtered by section:', result.length)
+      return result
+    }
+    
+    // وإلا فلتر حسب الفئة والنوع
     const result = products.filter((product) => {
       const categoryMatches = !categoryId || product.category_id === categoryId
       const typeMatches = !typeId || product.type_id === typeId
-      const sectionMatches = !sectionId || product.section_id === sectionId
       
-      if (!categoryMatches || !typeMatches || !sectionMatches) {
+      if (!categoryMatches || !typeMatches) {
         console.log('Product filtered out:', {
           productId: product.id,
           productName: product.name,
           product_category_id: product.category_id,
           product_type_id: product.type_id,
-          product_section_id: product.section_id,
           categoryMatches,
           typeMatches,
-          sectionMatches,
         })
       }
 
-      return categoryMatches && typeMatches && sectionMatches
+      return categoryMatches && typeMatches
     })
     
     console.log('Filtered products result:', result.length, result.map(p => ({ id: p.id, name: p.name })))
